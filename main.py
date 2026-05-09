@@ -12,7 +12,7 @@ if "auth" not in st.session_state:
 if not st.session_state.auth:
     st.title("☕ Acesso Restrito")
     senha = st.text_input("Senha de acesso", type="password")
-    if senha == "1234":
+    if senha == "1563":
         st.session_state.auth = True
         st.rerun()
     st.stop()
