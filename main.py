@@ -1,96 +1,77 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import os
 
-# Configurações de página para celular
 st.set_page_config(page_title="Gestão Cheirin Bão", layout="centered")
 
 # --- CONTROLE DE ACESSO ---
-def check_password():
-    if "password_correct" not in st.session_state:
-        st.title("☕ Acesso Restrito")
-        st.text_input("Digite a senha de acesso", type="password", on_change=password_entered, key="password")
-        return False
-    return st.session_state["password_correct"]
+if "auth" not in st.session_state:
+    st.session_state.auth = False
 
-def password_entered():
-    if st.session_state["password"] == "1234": # <--- SUA SENHA
-        st.session_state["password_correct"] = True
-        del st.session_state["password"]
-    else:
-        st.error("Senha incorreta")
+if not st.session_state.auth:
+    st.title("☕ Acesso Restrito")
+    senha = st.text_input("Senha de acesso", type="password")
+    if senha == "1234":
+        st.session_state.auth = True
+        st.rerun()
+    st.stop()
 
+# --- FUNÇÃO DE LIMPEZA FINANCEIRA ---
 def clean_currency(val):
     if isinstance(val, str):
-        # Remove R$, espaços e ajusta os pontos/vírgulas brasileiros
-        clean = val.replace('R$', '').replace('\xa0', '').strip()
-        if not clean: return 0.0
-        # Troca ponto de milhar por nada e vírgula decimal por ponto
-        clean = clean.replace('.', '').replace(',', '.')
-        try:
-            return float(clean)
-        except:
-            return 0.0
+        clean = val.replace('R$', '').replace('\xa0', '').replace('.', '').replace(',', '.').strip()
+        try: return float(clean)
+        except: return 0.0
     return val
 
-if check_password():
-    st.title("☕ Consulta de Faturamento")
+# --- CARREGAMENTO DOS DADOS ---
+file_name = "Faturamento.csv" if os.path.exists("Faturamento.csv") else "faturamento.csv"
+
+if os.path.exists(file_name):
+    # Lendo o arquivo com o separador correto
+    df = pd.read_csv(file_name, sep=';').copy()
+    hourly_cols = [c for c in df.columns if ":" in c]
+    
+    # Limpando todas as colunas financeiras
+    for col in hourly_cols + ['Faturamento do dia']:
+        df[col] = df[col].apply(clean_currency)
+    
+    st.title("☕ Consulta de Metas Acumuladas")
     st.write("Unidade: Madureira Shopping")
 
-    # Tenta carregar o arquivo (tratando F maiúsculo ou minúsculo)
-    file_name = "Faturamento.csv" if os.path.exists("Faturamento.csv") else "faturamento.csv"
+    # --- INTERFACE DE ENTRADA ---
+    st.divider()
+    hora_alvo = st.selectbox("Selecione a Hora:", hourly_cols, index=hourly_cols.index("18:00") if "18:00" in hourly_cols else 0)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        v_min = st.number_input("Valor Inicial (R$):", value=1000.0)
+    with col2:
+        v_max = st.number_input("Valor Final (R$):", value=1200.0)
 
-    if os.path.exists(file_name):
-        @st.cache_data
-        def load_data(fname):
-            # Lendo com separador ; que é o padrão do seu arquivo
-            df_raw = pd.read_csv(fname, sep=';', encoding='utf-8')
+    # --- LÓGICA DE CÁLCULO ACUMULADO ---
+    idx_hora = hourly_cols.index(hora_alvo)
+    colunas_ate_agora = hourly_cols[:idx_hora + 1]
+    
+    # Criamos uma coluna temporária com a soma das vendas até aquela hora
+    df['Soma_Acumulada'] = df[colunas_ate_agora].sum(axis=1)
+    
+    # Filtragem conforme os valores de entrada
+    df_filtrado = df[(df['Soma_Acumulada'] >= v_min) & (df['Soma_Acumulada'] <= v_max)]
+
+    # --- SAÍDA DOS RESULTADOS ---
+    st.divider()
+    if not df_filtrado.empty:
+        st.subheader("Resultados encontrados:")
+        for _, linha in df_filtrado.iterrows():
+            # Formatação seguindo o seu exemplo exato
+            dia = linha['Data']
+            acumulado = f"{linha['Soma_Acumulada']:,.2f}".replace('.', 'X').replace(',', '.').replace('X', ',')
+            total_dia = f"{linha['Faturamento do dia']:,.2f}".replace('.', 'X').replace(',', '.').replace('X', ',')
             
-            # Limpando valores financeiros
-            for col in df_raw.columns:
-                if col != 'Data':
-                    df_raw[col] = df_raw[col].apply(clean_currency)
-            return df_raw
-
-        df = load_data(file_name)
-
-        # Interface de Filtro
-        st.divider()
-        st.subheader("🔍 Filtrar por Horário")
-        
-        lista_horarios = [c for c in df.columns if ":" in c]
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            hora_selecionada = st.selectbox("Escolha a Hora", lista_horarios, index=len(lista_horarios)-6)
-        with col2:
-            st.write(f"Intervalo às {hora_selecionada}")
-            v_min = st.number_input("Valor Mín (R$)", value=50.0, step=10.0)
-            v_max = st.number_input("Valor Máx (R$)", value=500.0, step=10.0)
-
-        # Filtragem lógica
-        resultado = df[(df[hora_selecionada] >= v_min) & (df[hora_selecionada] <= v_max)].copy()
-
-        if not resultado.empty:
-            st.success(f"Encontramos {len(resultado)} dias com esse perfil!")
-            
-            # Gráfico Comparativo
-            fig = px.bar(
-                resultado, 
-                x='Data', 
-                y=[hora_selecionada, 'Faturamento do dia'],
-                barmode='group',
-                title="Total do Dia vs Faturamento na Hora",
-                labels={'value': 'Valor (R$)', 'variable': 'Categoria'},
-                color_discrete_sequence=['#ff7f0e', '#1f77b4']
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Tabela resumida
-            st.dataframe(resultado[['Data', hora_selecionada, 'Faturamento do dia']], use_container_width=True)
-        else:
-            st.warning("Nenhum dia encontrado neste intervalo.")
-
+            st.write(f"📅 **Dia {dia}**: Você atingiu **R$ {acumulado}** reais até as {hora_alvo} e faturou **R$ {total_dia}** reais no final do dia.")
     else:
-        st.error(f"Arquivo '{file_name}' não encontrado no GitHub. Verifique o nome do arquivo enviado.")
+        st.info("Nenhum dia encontrado com faturamento acumulado neste intervalo.")
+
+else:
+    st.error("Arquivo 'Faturamento.csv' não encontrado. Por favor, suba o arquivo para o GitHub.")
