@@ -1,14 +1,3 @@
 streamlit
     pandas
     plotly
-    ```
-
----
-
-### 🚀 Como rodar o App do jeito certo
-
-No Streamlit, você **não** clica no botão "Play" (triângulo) do Python que fica no canto superior direito. Se fizer isso, o erro pode continuar ou o site não abrirá.
-
-Para rodar o site, digite isto no terminal:
-```bash
-streamlit run main.py
