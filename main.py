@@ -11,7 +11,7 @@ def check_password():
     return st.session_state["password_correct"]
 
 def password_entered():
-    if st.session_state["password"] == "1234": # <--- MUDE SUA SENHA AQUI
+    if st.session_state["password"] == "1563": # <--- MUDE SUA SENHA AQUI
         st.session_state["password_correct"] = True
         del st.session_state["password"]
     else:
@@ -42,7 +42,7 @@ def clean_val(val):
 @st.cache_data
 def load_data():
     # Simulando a carga dos dados que você enviou
-    df = pd.read_csv("faturamento.csv") 
+    df = pd.read_csv("Faturamento.csv") 
     for col in df.columns:
         if col != 'Data':
             df[col] = df[col].apply(clean_val)
