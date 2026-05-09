@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+from datetime import datetime
 
 st.set_page_config(page_title="Gestão Cheirin Bão", layout="centered")
 
@@ -11,14 +12,23 @@ if "auth" not in st.session_state:
 if not st.session_state.auth:
     st.title("☕ Acesso Restrito")
     senha = st.text_input("Senha de acesso", type="password")
-    if senha == "1563":
+    if senha == "1234":
         st.session_state.auth = True
         st.rerun()
     st.stop()
 
-# --- FUNÇÃO DE FORMATAÇÃO DE MOEDA ---
+# --- FUNÇÕES DE AUXÍLIO ---
 def formatar_moeda(valor):
     return f"R$ {valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+
+def obter_dia_semana(data_str):
+    try:
+        # Converte a string 01/10/2025 para um objeto de data
+        data_obj = datetime.strptime(data_str, "%d/%m/%Y")
+        dias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
+        return dias[data_obj.weekday()]
+    except:
+        return ""
 
 def clean_currency(val):
     if isinstance(val, str):
@@ -62,16 +72,16 @@ if os.path.exists(file_name):
         st.subheader(f"📊 Encontrados {len(df_filtrado)} dias:")
         
         for _, linha in df_filtrado.iterrows():
+            dia_semana = obter_dia_semana(linha['Data'])
             acumulado_fmt = formatar_moeda(linha['Soma_Acumulada'])
             total_dia_fmt = formatar_moeda(linha['Faturamento do dia'])
             
-            # Usando markdown para criar um visual de "card"
             st.markdown(f"""
-            📅 **Dia {linha['Data']}**
-            * Até as {hora_alvo}: **{acumulado_fmt}**
-            * Final do dia: **{total_dia_fmt}**
+            📅 **{linha['Data']} ({dia_semana})**
+            * Acumulado até as {hora_alvo}: **{acumulado_fmt}**
+            * Total no fechamento: **{total_dia_fmt}**
             """)
-            st.divider() # Linha fina para separar os dias
+            st.divider()
     else:
         st.info("Nenhum dia encontrado neste intervalo.")
 else:
