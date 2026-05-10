@@ -32,7 +32,6 @@ def obter_dia_semana(data_str):
     try:
         data_obj = datetime.strptime(data_str, "%d/%m/%Y")
         dias = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
-        # weekday() retorna 0 para segunda. Ajustando para índice da lista PESOS_SEMANA (0=Dom)
         idx = (data_obj.weekday() + 1) % 7
         return dias[idx]
     except: return ""
@@ -55,12 +54,17 @@ if os.path.exists(file_name):
     st.title("🔮 Previsão e Histórico")
     st.write("Madureira Shopping")
 
-    # --- ENTRADAS ---
+    # --- ENTRADAS (RESTAURADO O INTERVALO AQUI) ---
     st.divider()
     hora_alvo = st.selectbox("Horário Atual:", hourly_cols, index=hourly_cols.index("18:00") if "18:00" in hourly_cols else 0)
-    v_acumulado = st.number_input("Faturamento Acumulado Agora (R$):", value=1000.0)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        v_min = st.number_input("Valor Inicial Acumulado:", value=1000.0)
+    with col2:
+        v_max = st.number_input("Valor Final Acumulado:", value=1200.0)
 
-    # Identifica contexto de hoje (última data do arquivo para simulação)
+    # Identifica contexto de hoje
     hoje_str = df['Data'].iloc[-1]
     hoje_obj = datetime.strptime(hoje_str, "%d/%m/%Y")
     idx_sem_hoje = (hoje_obj.weekday() + 1) % 7
@@ -71,10 +75,8 @@ if os.path.exists(file_name):
     idx_hora = hourly_cols.index(hora_alvo)
     df['Soma_Acumulada'] = df[hourly_cols[:idx_hora + 1]].sum(axis=1)
 
-    # Filtragem por Similaridade (Margem de 15%)
-    margem = 0.15
-    df_parecidos = df[(df['Soma_Acumulada'] >= v_acumulado * (1-margem)) & 
-                      (df['Soma_Acumulada'] <= v_acumulado * (1+margem))].copy()
+    # Filtragem pelo Intervalo de Entrada
+    df_parecidos = df[(df['Soma_Acumulada'] >= v_min) & (df['Soma_Acumulada'] <= v_max)].copy()
 
     if not df_parecidos.empty:
         # --- CÁLCULO DA PREVISÃO PONDERADA ---
@@ -85,7 +87,6 @@ if os.path.exists(file_name):
             p_sem = PESOS_SEMANA[idx_sem_hist]
             p_mes = PESOS_MES[min(dt.day - 1, 30)]
             
-            # Ajuste: (Final_Histórico / Pesos_Histórico) * Pesos_Hoje
             ajustado = (linha['Faturamento do dia'] / (p_sem * p_mes)) * (peso_hoje_sem * peso_hoje_mes)
             projeções.append(ajustado)
 
@@ -94,7 +95,7 @@ if os.path.exists(file_name):
         st.divider()
         st.subheader("🎯 Expectativa de Fechamento")
         st.metric("Média Ponderada", formatar_moeda(expectativa))
-        st.info(f"Cálculo baseado em **{len(df_parecidos)} dias** similares.")
+        st.info(f"Cálculo baseado em **{len(df_parecidos)} dias** dentro do intervalo informado.")
 
         # --- TABELA DE DIAS SEMELHANTES ---
         st.divider()
@@ -112,6 +113,6 @@ if os.path.exists(file_name):
         st.table(tabela_visual)
         
     else:
-        st.warning("Nenhum cenário similar encontrado no histórico para este valor/horário.")
+        st.warning("Nenhum cenário similar encontrado no histórico para este intervalo.")
 else:
-    st.error("Arquivo Faturamento.csv não encontrado no GitHub.")
+    st.error("Arquivo Faturamento.csv não encontrado.")
