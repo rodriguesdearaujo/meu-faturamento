@@ -11,7 +11,7 @@ if "auth" not in st.session_state:
 if not st.session_state.auth:
     st.title("☕ Acesso Restrito")
     senha = st.text_input("Senha de acesso", type="password")
-    if senha == "1563": # Senha atualizada conforme seu código
+    if senha == "1563":
         st.session_state.auth = True
         st.rerun()
     st.stop()
@@ -26,30 +26,22 @@ PESOS_MES = [
 
 # --- FUNÇÕES ---
 def formatar_moeda(valor):
-    # Transforma o número em string com 2 casas decimais
-    # Ex: 1200.5 -> "1200.50"
     parte_decimal = f"{valor:.2f}"
-    
-    # Inverte a lógica de pontos e vírgulas manualmente para evitar bugs de interpretação
     inteiro, decimal = parte_decimal.split('.')
-    
-    # Adiciona os pontos de milhar manualmente
     resultado_inteiro = ""
     for i, digito in enumerate(reversed(inteiro)):
         if i > 0 and i % 3 == 0:
             resultado_inteiro = "." + resultado_inteiro
         resultado_inteiro = digito + resultado_inteiro
-        
     return f"R$ {resultado_inteiro},{decimal}"
 
-
-    def obter_dia_semana(data_str):
-        try:
-            data_obj = datetime.strptime(data_str, "%d/%m/%Y")
-            dias = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
-            idx = (data_obj.weekday() + 1) % 7
-            return dias[idx]
-        except: return ""
+def obter_dia_semana(data_str):
+    try:
+        data_obj = datetime.strptime(data_str, "%d/%m/%Y")
+        dias = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
+        idx = (data_obj.weekday() + 1) % 7
+        return dias[idx]
+    except: return ""
 
 def clean_currency(val):
     if isinstance(val, str):
@@ -69,13 +61,13 @@ if os.path.exists(file_name):
     st.title("🔮 Previsão e Histórico")
     st.write("Madureira Shopping")
 
-    # --- DEFINIÇÃO DE HOJE (DATA REAL) ---
+    # --- DEFINIÇÃO DE HOJE ---
     hoje_obj = datetime.now()
     dias_traducao = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
     dia_semana_nome = dias_traducao[hoje_obj.weekday()]
     data_formatada = hoje_obj.strftime("%d/%m/%Y")
 
-    # --- ENTRADAS DO USUÁRIO (COM MARGEM DE VARIAÇÃO) ---
+    # --- ENTRADAS DO USUÁRIO ---
     st.divider()
     hora_alvo = st.selectbox("Horário Atual:", hourly_cols, index=hourly_cols.index("18:00") if "18:00" in hourly_cols else 0)
     
@@ -85,11 +77,11 @@ if os.path.exists(file_name):
     with col2:
         margem_percentual = st.slider("Margem de busca (%):", min_value=0, max_value=50, value=10)
 
-    # Cálculo automático do intervalo
+    # Cálculo do intervalo
     v_min = valor_centro * (1 - margem_percentual / 100)
     v_max = valor_centro * (1 + margem_percentual / 100)
 
-    # FORMA CORRETA: Uma única string formatada
+    # SAÍDA LIMPA: Somente valores com duas casas decimais
     st.write(f"Buscando no histórico dias entre {v_min:.2f} e {v_max:.2f}")
 
     # Identifica pesos de hoje
@@ -97,7 +89,7 @@ if os.path.exists(file_name):
     peso_hoje_sem = PESOS_SEMANA[idx_sem_hoje]
     peso_hoje_mes = PESOS_MES[min(hoje_obj.day - 1, 30)]
 
-    # Cálculo do Acumulado Histórico no CSV
+    # Cálculo do Acumulado Histórico
     idx_hora = hourly_cols.index(hora_alvo)
     df['Soma_Acumulada'] = df[hourly_cols[:idx_hora + 1]].sum(axis=1)
 
@@ -112,34 +104,28 @@ if os.path.exists(file_name):
             idx_sem_hist = (dt.weekday() + 1) % 7
             p_sem = PESOS_SEMANA[idx_sem_hist]
             p_mes = PESOS_MES[min(dt.day - 1, 30)]
-            
-            # Ajuste de sazonalidade
             ajustado = (linha['Faturamento do dia'] / (p_sem * p_mes)) * (peso_hoje_sem * peso_hoje_mes)
             projeções.append(ajustado)
 
         expectativa = sum(projeções) / len(projeções)
 
-        # --- SAÍDA DE DADOS ---
         st.divider()
         st.subheader(f"🎯 Previsão para hoje ({dia_semana_nome}, {data_formatada})")
-        
         st.metric("Expectativa de Fechamento", formatar_moeda(expectativa))
         
-        st.info(f"O sistema identificou que hoje é um dia com peso **{peso_hoje_sem:.2f}** (semana) e **{peso_hoje_mes:.2f}** (mês).")
-        st.write(f"Cálculo baseado em **{len(df_parecidos)} dias** similares encontrados no histórico.")
+        st.info(f"Peso hoje: Semana ({peso_hoje_sem:.2f}) | Mês ({peso_hoje_mes:.2f})")
 
-        # --- TABELA DE HISTÓRICO ---
         with st.expander("Ver dias históricos comparados"):
             tabela_visual = []
             for _, linha in df_parecidos.iterrows():
                 tabela_visual.append({
                     "Data": linha['Data'],
                     "Dia da Semana": obter_dia_semana(linha['Data']),
-                    f"Acumulado até {hora_alvo}": formatar_moeda(linha['Soma_Acumulada']),
-                    "Faturamento Final": formatar_moeda(linha['Faturamento do dia'])
+                    f"Acumulado {hora_alvo}": f"{linha['Soma_Acumulada']:.2f}",
+                    "Final": f"{linha['Faturamento do dia']:.2f}"
                 })
             st.table(tabela_visual)
     else:
-        st.warning("Nenhum cenário similar encontrado no histórico para este intervalo.")
+        st.warning("Nenhum cenário similar encontrado.")
 else:
     st.error("Arquivo Faturamento.csv não encontrado.")
