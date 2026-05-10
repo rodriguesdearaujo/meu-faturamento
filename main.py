@@ -55,14 +55,21 @@ if os.path.exists(file_name):
     st.write("Madureira Shopping")
 
     # --- ENTRADAS (RESTAURADO O INTERVALO AQUI) ---
-    st.divider()
-    hora_alvo = st.selectbox("Horário Atual:", hourly_cols, index=hourly_cols.index("18:00") if "18:00" in hourly_cols else 0)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        v_min = st.number_input("Valor Inicial Acumulado:", value=1000.0)
-    with col2:
-        v_max = st.number_input("Valor Final Acumulado:", value=1200.0)
+       st.divider()
+        
+        # Tradução do dia da semana para o cabeçalho
+        dias_traducao = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
+        dia_semana_nome = dias_traducao[hoje_obj.weekday()]
+        data_formatada = hoje_obj.strftime("%d/%m/%Y")
+
+        st.subheader(f"🎯 Previsão para hoje ({dia_semana_nome}, {data_formatada})")
+        
+        col_metrica, col_info = st.columns([1, 1])
+        with col_metrica:
+            st.metric("Expectativa de Fechamento", formatar_moeda(expectativa))
+        
+        st.info(f"O sistema identificou que hoje é um dia com peso **{peso_hoje_sem:.2f}** (semana) e **{peso_hoje_mes:.2f}** (mês).")
+        st.write(f"Cálculo baseado em **{len(df_parecidos)} dias** similares encontrados no histórico.")
 
     # Identifica contexto de hoje
     hoje_str = df['Data'].iloc[-1]
