@@ -26,8 +26,10 @@ PESOS_MES = [
 
 # --- FUNÇÕES ---
 def formatar_moeda(valor):
-    # Garante que o retorno seja apenas uma string limpa
-    return f"R$ {valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    # Formata o número com 2 casas decimais e substitui ponto por vírgula
+    # sem usar as vírgulas de milhar do Python que causam conflito
+    valor_formatado = "{:,.2f}".format(valor).replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"R$ {valor_formatado}"
 
 def obter_dia_semana(data_str):
     try:
@@ -75,7 +77,8 @@ if os.path.exists(file_name):
     v_min = valor_centro * (1 - margem_percentual / 100)
     v_max = valor_centro * (1 + margem_percentual / 100)
 
-    st.write(f"Analisando dias que faturaram entre {v_min} e {v_max}.")
+    # FORMA CORRETA: Uma única string formatada
+    st.write(f"Buscando no histórico dias entre {formatar_moeda(v_min)} e {formatar_moeda(v_max)}")
 
     # Identifica pesos de hoje
     idx_sem_hoje = (hoje_obj.weekday() + 1) % 7
