@@ -66,7 +66,7 @@ if os.path.exists(file_name):
 
     # Identifica contexto de hoje
     hoje_str = df['Data'].iloc[-1]
-    hoje_obj = datetime.strptime(hoje_str, "%d/%m/%Y")
+    hoje_obj = datetime.now()
     idx_sem_hoje = (hoje_obj.weekday() + 1) % 7
     peso_hoje_sem = PESOS_SEMANA[idx_sem_hoje]
     peso_hoje_mes = PESOS_MES[min(hoje_obj.day - 1, 30)]
