@@ -74,7 +74,7 @@ if os.path.exists(file_name):
     v_min = valor_centro * (1 - margem_percentual / 100)
     v_max = valor_centro * (1 + margem_percentual / 100)
 
-    st.caption(f"Buscando no histórico dias entre {formatar_moeda(v_min)} e {formatar_moeda(v_max)}")
+    st.caption(f"Buscando no histórico dias entre **{formatar_moeda(v_min)}** e **{formatar_moeda(v_max)}**")
 
 
     # Identifica pesos de hoje
