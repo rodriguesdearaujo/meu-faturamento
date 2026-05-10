@@ -75,7 +75,7 @@ if os.path.exists(file_name):
     with col1:
         valor_centro = st.number_input("Faturamento Acumulado Atual (R$):", value=1100.0, step=50.0)
     with col2:
-        margem_percentual = st.slider("Margem de busca (%):", min_value=0, max_value=50, value=10)
+        margem_percentual = st.slider("Margem de busca (%):", min_value=0, max_value=50, value=5)
 
     # Cálculo do intervalo
     v_min = valor_centro * (1 - margem_percentual / 100)
