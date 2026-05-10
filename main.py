@@ -26,18 +26,30 @@ PESOS_MES = [
 
 # --- FUNÇÕES ---
 def formatar_moeda(valor):
-    # Formata o número com 2 casas decimais e substitui ponto por vírgula
-    # sem usar as vírgulas de milhar do Python que causam conflito
-    valor_formatado = "{:,.2f}".format(valor).replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"R$ {valor_formatado}"
+    # Transforma o número em string com 2 casas decimais
+    # Ex: 1200.5 -> "1200.50"
+    parte_decimal = f"{valor:.2f}"
+    
+    # Inverte a lógica de pontos e vírgulas manualmente para evitar bugs de interpretação
+    inteiro, decimal = parte_decimal.split('.')
+    
+    # Adiciona os pontos de milhar manualmente
+    resultado_inteiro = ""
+    for i, digito in enumerate(reversed(inteiro)):
+        if i > 0 and i % 3 == 0:
+            resultado_inteiro = "." + resultado_inteiro
+        resultado_inteiro = digito + resultado_inteiro
+        
+    return f"R$ {resultado_inteiro},{decimal}"
 
-def obter_dia_semana(data_str):
-    try:
-        data_obj = datetime.strptime(data_str, "%d/%m/%Y")
-        dias = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
-        idx = (data_obj.weekday() + 1) % 7
-        return dias[idx]
-    except: return ""
+
+    def obter_dia_semana(data_str):
+        try:
+            data_obj = datetime.strptime(data_str, "%d/%m/%Y")
+            dias = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
+            idx = (data_obj.weekday() + 1) % 7
+            return dias[idx]
+        except: return ""
 
 def clean_currency(val):
     if isinstance(val, str):
