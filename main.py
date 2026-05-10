@@ -90,7 +90,7 @@ if os.path.exists(file_name):
     v_max = valor_centro * (1 + margem_percentual / 100)
 
     # FORMA CORRETA: Uma única string formatada
-    st.write(f"Buscando no histórico dias entre {formatar_moeda(v_min)} e {formatar_moeda(v_max)}")
+    st.write(f"Buscando no histórico dias entre {v_min:.2f} e {v_max:.2f}")
 
     # Identifica pesos de hoje
     idx_sem_hoje = (hoje_obj.weekday() + 1) % 7
