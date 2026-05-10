@@ -26,6 +26,7 @@ PESOS_MES = [
 
 # --- FUNÇÕES ---
 def formatar_moeda(valor):
+    # Garante que o retorno seja apenas uma string limpa
     return f"R$ {valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
 def obter_dia_semana(data_str):
