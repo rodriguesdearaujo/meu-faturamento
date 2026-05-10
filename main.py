@@ -75,7 +75,7 @@ if os.path.exists(file_name):
     v_min = valor_centro * (1 - margem_percentual / 100)
     v_max = valor_centro * (1 + margem_percentual / 100)
 
-    st.markdown(f"✨ *Analisando dias que faturaram entre **{formatar_moeda(v_min)}** e **{formatar_moeda(v_max)}** até este horário.*")
+    st.write(f"Analisando dias que faturaram entre {v_min} e {v_max}.")
 
     # Identifica pesos de hoje
     idx_sem_hoje = (hoje_obj.weekday() + 1) % 7
