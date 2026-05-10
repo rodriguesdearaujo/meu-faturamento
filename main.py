@@ -60,15 +60,22 @@ if os.path.exists(file_name):
     dia_semana_nome = dias_traducao[hoje_obj.weekday()]
     data_formatada = hoje_obj.strftime("%d/%m/%Y")
 
-    # --- ENTRADAS DO USUÁRIO ---
+    # --- ENTRADAS DO USUÁRIO (COM MARGEM DE VARIAÇÃO) ---
     st.divider()
     hora_alvo = st.selectbox("Horário Atual:", hourly_cols, index=hourly_cols.index("18:00") if "18:00" in hourly_cols else 0)
     
     col1, col2 = st.columns(2)
     with col1:
-        v_min = st.number_input("Valor Mínimo Acumulado:", value=1000.0)
+        valor_centro = st.number_input("Faturamento Acumulado Atual (R$):", value=1100.0, step=50.0)
     with col2:
-        v_max = st.number_input("Valor Máximo Acumulado:", value=1200.0)
+        margem_percentual = st.slider("Margem de busca (%):", min_value=0, max_value=50, value=10)
+
+    # Cálculo automático do intervalo
+    v_min = valor_centro * (1 - margem_percentual / 100)
+    v_max = valor_centro * (1 + margem_percentual / 100)
+
+    st.caption(f"Buscando no histórico dias entre {formatar_moeda(v_min)} e {formatar_moeda(v_max)}")
+
 
     # Identifica pesos de hoje
     idx_sem_hoje = (hoje_obj.weekday() + 1) % 7
