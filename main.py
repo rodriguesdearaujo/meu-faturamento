@@ -9,8 +9,9 @@ st.set_page_config(page_title="Gestão Cheirin Bão", layout="centered")
 if "auth" not in st.session_state:
     st.session_state.auth = False
 if not st.session_state.auth:
+    st.title("☕ Acesso Restrito")
     senha = st.text_input("Senha de acesso", type="password")
-    if senha == "1234":
+    if senha == "1563":
         st.session_state.auth = True
         st.rerun()
     st.stop()
@@ -27,6 +28,15 @@ PESOS_MES = [
 def formatar_moeda(valor):
     return f"R$ {valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
+def obter_dia_semana(data_str):
+    try:
+        data_obj = datetime.strptime(data_str, "%d/%m/%Y")
+        dias = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
+        # weekday() retorna 0 para segunda. Ajustando para índice da lista PESOS_SEMANA (0=Dom)
+        idx = (data_obj.weekday() + 1) % 7
+        return dias[idx]
+    except: return ""
+
 def clean_currency(val):
     if isinstance(val, str):
         clean = val.replace('R$', '').replace('\xa0', '').replace('.', '').replace(',', '.').strip()
@@ -42,22 +52,26 @@ if os.path.exists(file_name):
     for col in hourly_cols + ['Faturamento do dia']:
         df[col] = df[col].apply(clean_currency)
 
-    st.title("🔮 Previsão Ponderada")
-    
+    st.title("🔮 Previsão e Histórico")
+    st.write("Madureira Shopping")
+
     # --- ENTRADAS ---
-    hora_alvo = st.selectbox("Horário Atual:", hourly_cols, index=hourly_cols.index("18:00"))
+    st.divider()
+    hora_alvo = st.selectbox("Horário Atual:", hourly_cols, index=hourly_cols.index("18:00") if "18:00" in hourly_cols else 0)
     v_acumulado = st.number_input("Faturamento Acumulado Agora (R$):", value=1000.0)
 
-    # Contexto de Hoje (Data da última atualização)
-    hoje = datetime.strptime(df['Data'].iloc[-1], "%d/%m/%Y")
-    peso_hoje_sem = PESOS_SEMANA[hoje.weekday() if hoje.weekday() < 6 else 0] # Ajuste Dom-Sab
-    peso_hoje_mes = PESOS_MES[min(hoje.day - 1, 30)]
+    # Identifica contexto de hoje (última data do arquivo para simulação)
+    hoje_str = df['Data'].iloc[-1]
+    hoje_obj = datetime.strptime(hoje_str, "%d/%m/%Y")
+    idx_sem_hoje = (hoje_obj.weekday() + 1) % 7
+    peso_hoje_sem = PESOS_SEMANA[idx_sem_hoje]
+    peso_hoje_mes = PESOS_MES[min(hoje_obj.day - 1, 30)]
 
     # Cálculo do Acumulado Histórico
     idx_hora = hourly_cols.index(hora_alvo)
     df['Soma_Acumulada'] = df[hourly_cols[:idx_hora + 1]].sum(axis=1)
 
-    # Filtragem por Similaridade (Margem de 15% para encontrar dias parecidos)
+    # Filtragem por Similaridade (Margem de 15%)
     margem = 0.15
     df_parecidos = df[(df['Soma_Acumulada'] >= v_acumulado * (1-margem)) & 
                       (df['Soma_Acumulada'] <= v_acumulado * (1+margem))].copy()
@@ -67,11 +81,11 @@ if os.path.exists(file_name):
         projeções = []
         for _, linha in df_parecidos.iterrows():
             dt = datetime.strptime(linha['Data'], "%d/%m/%Y")
-            p_sem = PESOS_SEMANA[dt.weekday() if dt.weekday() < 6 else 0]
+            idx_sem_hist = (dt.weekday() + 1) % 7
+            p_sem = PESOS_SEMANA[idx_sem_hist]
             p_mes = PESOS_MES[min(dt.day - 1, 30)]
             
-            # Ajustamos o fechamento histórico para a realidade de HOJE
-            # Formula: (Valor Final / Pesos do Passado) * Pesos de Hoje
+            # Ajuste: (Final_Histórico / Pesos_Histórico) * Pesos_Hoje
             ajustado = (linha['Faturamento do dia'] / (p_sem * p_mes)) * (peso_hoje_sem * peso_hoje_mes)
             projeções.append(ajustado)
 
@@ -80,12 +94,24 @@ if os.path.exists(file_name):
         st.divider()
         st.subheader("🎯 Expectativa de Fechamento")
         st.metric("Média Ponderada", formatar_moeda(expectativa))
-        st.caption(f"Ajustado para: {hoje.strftime('%d/%m')} ({['Seg','Ter','Qua','Qui','Sex','Sab','Dom'][hoje.weekday()]})")
+        st.info(f"Cálculo baseado em **{len(df_parecidos)} dias** similares.")
 
-        # Exibição dos Gêmeos
-        with st.expander("Ver dias similares usados no cálculo"):
-            st.table(df_parecidos[['Data', 'Soma_Acumulada', 'Faturamento do dia']])
+        # --- TABELA DE DIAS SEMELHANTES ---
+        st.divider()
+        st.subheader("📅 Gêmeos Históricos Encontrados")
+        
+        tabela_visual = []
+        for _, linha in df_parecidos.iterrows():
+            tabela_visual.append({
+                "Data": linha['Data'],
+                "Dia da Semana": obter_dia_semana(linha['Data']),
+                f"Acumulado até {hora_alvo}": formatar_moeda(linha['Soma_Acumulada']),
+                "Faturamento Final": formatar_moeda(linha['Faturamento do dia'])
+            })
+        
+        st.table(tabela_visual)
+        
     else:
-        st.warning("Nenhum cenário similar encontrado no histórico.")
+        st.warning("Nenhum cenário similar encontrado no histórico para este valor/horário.")
 else:
-    st.error("Arquivo Faturamento.csv não encontrado.")
+    st.error("Arquivo Faturamento.csv não encontrado no GitHub.")
