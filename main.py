@@ -113,7 +113,8 @@ if os.path.exists(file_name):
         st.subheader(f"🎯 Previsão para hoje ({dia_semana_nome}, {data_formatada})")
         st.metric("Expectativa de Fechamento", formatar_moeda(expectativa))
         
-        st.info(f"Peso hoje: Semana ({peso_hoje_sem:.2f}) | Mês ({peso_hoje_mes:.2f})")
+        st.info(f"O sistema identificou que hoje é um dia com peso **{peso_hoje_sem:.2f}** (semana) e **{peso_hoje_mes:.2f}** (mês).")
+        st.write(f"Cálculo baseado em **{len(df_parecidos)} dias** similares encontrados no histórico.")
 
         with st.expander("Ver dias históricos comparados"):
             tabela_visual = []
