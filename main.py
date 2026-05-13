@@ -62,7 +62,8 @@ if os.path.exists(file_name):
     st.write("Madureira Shopping")
 
     # --- DEFINIÇÃO DE HOJE ---
-    hoje_obj = datetime.now()
+    data_escolhida = st.date_input("Data da projeção", value=datetime.now())
+    hoje_obj = datetime.combine(data_escolhida, datetime.min.time())
     dias_traducao = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
     dia_semana_nome = dias_traducao[hoje_obj.weekday()]
     data_formatada = hoje_obj.strftime("%d/%m/%Y")
@@ -95,7 +96,8 @@ if os.path.exists(file_name):
 
     # Filtragem
     df_parecidos = df[(df['Soma_Acumulada'] >= v_min) & (df['Soma_Acumulada'] <= v_max)].copy()
-
+    considerar_mesmo_dia_semana = st.checkbox("Comparar apenas com o mesmo dia da semana")
+    
     if not df_parecidos.empty:
         # --- CÁLCULO DA PREVISÃO ---
         projeções = []
