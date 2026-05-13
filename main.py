@@ -95,8 +95,23 @@ if os.path.exists(file_name):
     df['Soma_Acumulada'] = df[hourly_cols[:idx_hora + 1]].sum(axis=1)
 
     # Filtragem
-    df_parecidos = df[(df['Soma_Acumulada'] >= v_min) & (df['Soma_Acumulada'] <= v_max)].copy()
+    df_parecidos = df[
+    (df['Soma_Acumulada'] >= v_min) &
+    (df['Soma_Acumulada'] <= v_max)
+    ].copy()
+
     considerar_mesmo_dia_semana = st.checkbox("Comparar apenas com o mesmo dia da semana")
+
+    # Índice do dia da semana dos dias históricos
+    df_parecidos["DiaSemanaIdx"] = df_parecidos["Data"].apply(
+        lambda x: (datetime.strptime(x, "%d/%m/%Y").weekday() + 1) % 7
+    )
+    
+    # Se marcado, mantém apenas os dias históricos com o mesmo dia da semana da data escolhida
+    if considerar_mesmo_dia_semana:
+        df_parecidos = df_parecidos[df_parecidos["DiaSemanaIdx"] == idx_sem_hoje]
+    
+    if not df_parecidos.empty:
     
     if not df_parecidos.empty:
         # --- CÁLCULO DA PREVISÃO ---
