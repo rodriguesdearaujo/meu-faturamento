@@ -112,8 +112,6 @@ if os.path.exists(file_name):
         df_parecidos = df_parecidos[df_parecidos["DiaSemanaIdx"] == idx_sem_hoje]
     
     if not df_parecidos.empty:
-    
-    if not df_parecidos.empty:
         # --- CÁLCULO DA PREVISÃO ---
         projeções = []
         for _, linha in df_parecidos.iterrows():
